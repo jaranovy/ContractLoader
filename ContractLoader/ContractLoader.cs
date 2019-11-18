@@ -19,41 +19,46 @@ namespace ContractLoader
             Console.WriteLine($"Used data file [{dataFilepath}]");
             Console.WriteLine($"Used schema file [{schemaFilepath}]");
 
-            // ReadDataFile(dataFilepath, schemaFilepath);
-
-            /* Clean DB */
+            /* Clean DB for debug purpose */
             db.individuals.RemoveRange(db.individuals);
             db.subjectRoles.RemoveRange(db.subjectRoles);
             db.contracts.RemoveRange(db.contracts);
             db.SaveChanges();
 
-            XmlSerializer serializer = new XmlSerializer(typeof(Batch));
-            Batch resultingMessage = (Batch)serializer.Deserialize(new XmlTextReader(dataFilepath));
-
-            Console.WriteLine($"Loaded Batch {resultingMessage.ToString()}");
-
-            foreach (BatchContract batchContract in resultingMessage.Contract)
-            {
-                Console.WriteLine($"Contract {batchContract.ContractCode} loaded");
-
-                Contract contract = ConvertBatchContractToContract(batchContract);
-
-                Console.WriteLine($"Contract {batchContract.ContractCode} mapped to object");
-
-                PrintContract(contract);
-
-                SaveContractToDb(contract);
-
-                Console.WriteLine($"Contract {batchContract.ContractCode} saved into DB");
-            }
+            ReadDataFile(dataFilepath, schemaFilepath);
         }
 
-        private void SaveContractToDb(Contract contract)
+        private void ReadDataFile(string dataFilepath, string schemaFilepath)
         {
-            //db.individuals.AddRange(contract.individuals);
-            //db.subjectRoles.AddRange(contract.subjectRoles);
-            db.contracts.Add(contract);
-            db.SaveChanges();
+            XmlSerializer contractSerializer = new XmlSerializer(typeof(BatchContract));
+
+            /* Define XML Reader Settings */
+            XmlReaderSettings xmlReaderSettings = new XmlReaderSettings();
+            xmlReaderSettings.ConformanceLevel = ConformanceLevel.Document;
+            xmlReaderSettings.ValidationType = ValidationType.Schema;
+            xmlReaderSettings.Schemas.Add("http://creditinfo.com/schemas/Sample/Data", schemaFilepath);
+
+            using (XmlReader xmlReader = XmlReader.Create(dataFilepath, xmlReaderSettings))
+            {
+                xmlReader.MoveToContent();
+
+                while (xmlReader.ReadToFollowing("Contract"))
+                {
+                    BatchContract batchCobtract = (batchCobtract)contractSerializer.Deserialize(xmlReader.ReadSubtree());
+
+                    Console.WriteLine($"Contract {batchContract.ContractCode} loaded");
+
+                    Contract contract = ConvertBatchContractToContract(batchContract);
+
+                    Console.WriteLine($"Contract {batchContract.ContractCode} mapped to object");
+
+                    PrintContract(contract);
+
+                    SaveContractToDb(contract);
+
+                    Console.WriteLine($"Contract {batchContract.ContractCode} saved into DB");
+                }
+            }
         }
 
         private Contract ConvertBatchContractToContract(BatchContract batchContract)
@@ -163,6 +168,12 @@ namespace ContractLoader
                 }
             }
             Console.WriteLine($"-----------------------------------------------------");
+        }
+
+        private void SaveContractToDb(Contract contract)
+        {
+            db.contracts.Add(contract);
+            db.SaveChanges();
         }
     }
 }
