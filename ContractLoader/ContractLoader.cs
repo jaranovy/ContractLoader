@@ -11,7 +11,8 @@ namespace ContractLoader
 {
     public class ContractLoader
     {
-        private const string COTRACT_ELEMENT_NAME = "Contract";
+        private const string DEFAULT_SCHEMA = "http://creditinfo.com/schemas/Sample/Data";
+
         private static ContractDbContext db = new ContractDbContext();
 
         public ContractLoader(string dataFilepath, string schemaFilepath)
@@ -30,13 +31,13 @@ namespace ContractLoader
 
         private void ReadDataFile(string dataFilepath, string schemaFilepath)
         {
-            XmlSerializer contractSerializer = new XmlSerializer(typeof(BatchContract));
+            XmlSerializer contractSerializer = new XmlSerializer(typeof(Batch));
 
             /* Define XML Reader Settings */
             XmlReaderSettings xmlReaderSettings = new XmlReaderSettings();
             xmlReaderSettings.ConformanceLevel = ConformanceLevel.Document;
             xmlReaderSettings.ValidationType = ValidationType.Schema;
-            xmlReaderSettings.Schemas.Add("http://creditinfo.com/schemas/Sample/Data", schemaFilepath);
+            xmlReaderSettings.Schemas.Add(DEFAULT_SCHEMA, schemaFilepath);
 
             using (XmlReader xmlReader = XmlReader.Create(dataFilepath, xmlReaderSettings))
             {
@@ -44,19 +45,19 @@ namespace ContractLoader
 
                 while (xmlReader.ReadToFollowing("Contract"))
                 {
-                    BatchContract batchCobtract = (batchCobtract)contractSerializer.Deserialize(xmlReader.ReadSubtree());
+                    BatchContract batchCobtract = (BatchContract)contractSerializer.Deserialize(xmlReader.ReadSubtree());
 
-                    Console.WriteLine($"Contract {batchContract.ContractCode} loaded");
+                    Console.WriteLine($"Contract {batchCobtract.ContractCode} loaded");
 
-                    Contract contract = ConvertBatchContractToContract(batchContract);
+                    Contract contract = ConvertBatchContractToContract(batchCobtract);
 
-                    Console.WriteLine($"Contract {batchContract.ContractCode} mapped to object");
+                    Console.WriteLine($"Contract {batchCobtract.ContractCode} mapped to object");
 
                     PrintContract(contract);
 
                     SaveContractToDb(contract);
 
-                    Console.WriteLine($"Contract {batchContract.ContractCode} saved into DB");
+                    Console.WriteLine($"Contract {batchCobtract.ContractCode} saved into DB");
                 }
             }
         }
